@@ -6,8 +6,8 @@ pipeline {
 
     environment {
         // Поміняйте APP_NAME та DOCKER_IMAGE_NAME на ваше імʼя та прізвище, відповідно.
-        APP_NAME = 'Taras'
-        DOCKER_IMAGE_NAME = 'Muzychuk'
+        APP_NAME = 'taras'
+        DOCKER_IMAGE_NAME = 'muzychuk'
         // Необхідно для роботи в плейграунді
         GOCACHE="/home/jenkins/.cache/go-build/"
     }
@@ -18,7 +18,7 @@ pipeline {
                 // Крок клонування репозиторію
                  git 'https://github.com/TarasMuzychuk/jenkins-ci-lab.git'
             }
-        }
+        }}
 
         stage('Compile') {
             agent {
@@ -44,19 +44,22 @@ pipeline {
             }
             steps {
                 // Виконання юніт-тестів. Команду можна знайти в Google
-               sh 'go test ./...'
+               script {
+                dir("${WORKSPACE}") {
+                 sh 'go get -t -v ./...'
+                 sh 'go test -v ./...'
+            }
+        }
             }
         }
 
-        stage('Archive Artifact and Build Docker Image') {
+        stage('Archive Artifact and Build Docker Image') {{
             parallel {
                 stage('Archive Artifact') {
                     steps {
                         // Створення TAR-архіву артефакту з використанням імені додатку APP_NAME та номеру сборки BUILD_NUMBER
                         script {
-                    def artifactName = "${env.APP_NAME}-${env.BUILD_NUMBER}.tar"
-                    sh "tar -cvf ${artifactName} ${env.APP_NAME}"
-                    archiveArtifacts artifacts: "${artifactName}", onlyIfSuccessful: true
+                   sh "tar -czf ${APP_NAME}-${BUILD_NUMBER}.tar.gz ${APP_NAME}"
                 }
                     }
                 }
@@ -76,6 +79,7 @@ pipeline {
     post {
         success {
             // Архівація успішна, артефакт готовий для використання та збереження
+             archiveArtifacts artifacts: "${APP_NAME}-${BUILD_NUMBER}.tar.gz", onlyIfSuccessful: true
              echo 'Pipeline has finished successful. The artifact is ready for use and preservation.'
         }
         always {
